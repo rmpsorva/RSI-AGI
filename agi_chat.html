@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AGI Universal Chat - Todos los modelos en uno</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --text: #c9d1d9;
+      --user: #238636;
+      --ai: #58a6ff;
+      --border: #30363d;
+    }
+    body {
+      margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column;
+    }
+    #chat {
+      flex: 1; overflow-y: auto; padding: 20px; max-width: 900px; margin: 0 auto; width: 100%;
+    }
+    .msg {
+      margin: 15px 0; padding: 12px 18px; border-radius: 18px; max-width: 80%; line-height: 1.5;
+    }
+    .user { background: var(--user); color: white; align-self: flex-end; margin-left: auto; border-bottom-right-radius: 4px; }
+    .ai   { background: #21262d; border: 1px solid var(--border); align-self: flex-start; border-bottom-left-radius: 4px; }
+    .msg pre { background: #161b22; padding: 10px; border-radius: 8px; overflow-x: auto; }
+    #input-area {
+      padding: 15px; border-top: 1px solid var(--border); background: #161b22; max-width: 900px; margin: 0 auto; width: 100%;
+    }
+    #input-row { display: flex; gap: 10px; }
+    #prompt { flex: 1; padding: 14px; background: #0d1117; border: 1px solid var(--border); border-radius: 12px; color: white; font-size: 16px; }
+    #prompt:focus { outline: none; border-color: var(--ai); }
+    button {
+      padding: 0 20px; background: var(--ai); color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold;
+    }
+    button:disabled { background: #30363d; cursor: not-allowed; }
+    .status {
+      text-align: center; padding: 10px; font-size: 14px; color: #8b949e;
+    }
+    .typing { font-style: italic; color: #8b949e; }
+  </style>
+</head>
+<body>
+
+  <div id="chat">
+    <div class="status" id="status">Cargando el AGI más potente que tengas disponible...</div>
+  </div>
+
+  <div id="input-area">
+    <div id="input-row">
+      <textarea id="prompt" rows="1" placeholder="Pregúntale cualquier cosa al AGI universal... (Enter = enviar, Shift+Enter = salto de línea)"></textarea>
+      <button id="send">Enviar</button>
+    </div>
+  </div>
+
+<script>
+// === CONFIGURACIÓN ===
+const BACKEND_URL = "http://localhost:8000/chat"; // cambia si usas otro puerto
+
+// === Elementos ===
+const chat = document.getElementById("chat");
+const promptInput = document.getElementById("prompt");
+const sendBtn = document.getElementById("send");
+const status = document.getElementById("status");
+
+// Auto-ajustar altura del textarea
+promptInput.addEventListener("input", function() {
+  this.style.height = "auto";
+  this.style.height = (this.scrollHeight) + "px";
+});
+
+// Enviar con Enter (Shift+Enter = salto de línea)
+promptInput.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    enviar();
+  }
+});
+sendBtn.addEventListener("click", enviar);
+
+// === Función principal ===
+async function enviar() {
+  const texto = promptInput.value.trim();
+  if (!texto) return;
+
+  // Añadir mensaje del usuario
+  addMessage(texto, "user");
+  promptInput.value = "";
+  promptInput.style.height = "auto";
+  addMessage("Escribiendo...", "ai typing");
+  sendBtn.disabled = true;
+
+  try {
+    const res = await fetch(BACKEND_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: texto })
+    });
+
+    const data = await res.json();
+    removeTyping();
+    
+    if (data.error) {
+      addMessage("Error: " + data.error, "ai");
+    } else {
+      addMessage(data.respuesta, "ai");
+      status.textContent = `Modelo activo: ${data.modelo} (${data.proveedor})`;
+    }
+  } catch (err) {
+    removeTyping();
+    addMessage("Error de conexión. ¿Está el servidor Python corriendo?", "ai");
+    console.error(err);
+  }
+  sendBtn.disabled = false;
+}
+
+// === Helpers para el chat ===
+function addMessage(text, type) {
+  const div = document.createElement("div");
+  div.className = "msg " + type;
+  div.innerHTML = text.replace(/\n/g, "<br>");
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function removeTyping() {
+  const typing = document.querySelector(".typing");
+  if (typing) typing.remove();
+}
+
+// === Al cargar: detectar modelo ===
+fetch(BACKEND_URL).then(r => r.json()).then(data => {
+  status.textContent = `Listo - Modelo activo: ${data.modelo} (${data.proveedor})`;
+}).catch(() => {
+  status.textContent = "Error: No se pudo conectar al backend. Ejecuta: python universal_server.py";
+});
+</script>
+</body>
+</html>
