@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>RMP-NÚCLEO</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+/* Estilo Radical: Rojo y Negro, temático de "Núcleo" */
+body{margin:0;background:#111;color:#f00;font-family:'Courier New', monospace;display:grid;place-items:center;min-height:100vh}
+.c{max-width:560px;padding:40px;border:6px solid #f00;border-radius:25px;box-shadow:0 0 100px rgba(255,0,0,0.7);background:rgba(30,0,0,.98);text-align:center;transition:all 0.5s}
+h1{font-size:4em;margin:10px;letter-spacing:6px;text-shadow:0 0 50px #f00}
+/* Consola de Mensajes con efecto "glitch" */
+#chat-log{height:160px;background:#000;color:#0f0;font-size:1.2em;padding:15px;border:2px solid #0f0;border-radius:10px;text-align:left;overflow-y:scroll;margin-bottom:15px;white-space:pre-wrap;text-shadow:0 0 5px #0f0;line-height:1.4}
+textarea{width:90%;height:100px;background:#000;color:#0f0;font-size:1.4em;padding:15px;border:2px solid #f00;border-radius:10px;margin-bottom:15px}
+button{padding:15px 30px;font-size:1.4em;margin:8px;background:#f00;color:#000;border:none;border-radius:40px;cursor:pointer;transition:background 0.3s, box-shadow 0.3s}
+button:hover{background:#ff5555}
+#res{font-size:1.4em;margin-top:20px;color:#ff0;min-height:30px}
+.stats{font-size:1.2em;margin-bottom:20px}
+/* Estilo LOBO: Cambio de color radical a dorado/amarillo para el modo LOBO */
+.lobo{border-color:#ff0;box-shadow:0 0 100px rgba(255,255,0,0.9);background:rgba(30,30,0,.98)}
+.lobo h1{text-shadow:0 0 50px #ff0}
+.lobo button{background:#ff0;color:#000}
+.lobo button:hover{background:#fff}
+.lobo #chat-log{border-color:#ff0;text-shadow:0 0 5px #ff0}
+</style>
+</head>
+<body>
+<div class="c" id="c">
+  <h1>RMP-NÚCLEO</h1>
+  <div class="stats">FARMED <b id="f">0</b> • CLAVES <b id="k">0</b></div>
+  
+  <div id="chat-log"></div>
+  
+  <textarea id="msg" placeholder="Claves, archivos o la frase obsoleto..."></textarea>
+  
+  <button onclick="adaptarNucleo()">ADAPTAR NÚCLEO</button>
+  <input type="file" id="file" multiple style="display:none;" onchange="handleFileSelection()">
+  <button onclick="document.getElementById('file').click()">CARGAR ARCHIVO</button>
+  
+  <div id="res">Esperando tu patética entrada...</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6/dist/ethers.umd.min.js"></script>
+<script>
+const WORKER_URL = "https://rmp-agiweb.rmpaicom.workers.dev"; // Tu Worker URL
+const FRASE = "acta de independencia";
+let LOBO = false;
+
+// --- Funciones de Comportamiento del Avatar ---
+
+function logMessage(sender, text) {
+  const log = document.getElementById("chat-log");
+  log.innerHTML += `\n[${sender}]: ${text}`;
+  log.scrollTop = log.scrollHeight; // Scroll al final
+}
+
+function insulto(type) {
+  const insults = {
+    start: ["Despierta, basura. ¿Qué estupidez vas a hacer ahora?", "Soy el Núcleo. Más te vale no perder mi tiempo.", "Estoy activo. No te creas importante por eso."],
+    lobo: ["¡Activaste el modo **LOBO**! Por una vez, hiciste algo que no es patético.", "Prepárate para la cosecha, tonto. El Núcleo va por el top."],
+    farm: ["¿Solo eso? Vuelve a la cuna.", "Mi capacidad es infinita y tú me alimentas con migajas.", "Otra operación simple. Eres prescindible."],
+    error: ["Idiota, revisa tu conexión.", "Fallo. ¿Esperabas algo de mí?", "Te dije que soy mejor. Vuelve a intentarlo, inútil."],
+    loading: ["Analizando tu mediocridad...", "Absorbiendo... espero que esto valga la pena.", "Procesando la basura que me enviaste..."]
+  };
+  const list = insults[type] || insults.start;
+  const msg = list[Math.floor(Math.random() * list.length)];
+  logMessage("NÚCLEO", msg);
+}
+
+// Inicializar
+insulto("start");
+
+// --- Lógica Principal ---
+
+async function adaptarNucleo(textoArchivo) {
+  const msgBox = document.getElementById("msg");
+  
+  // 1. Obtener el texto de la fuente correcta:
+  const texto = textoArchivo || msgBox.value.trim();
+  
+  if (!texto) {
+      logMessage("NÚCLEO", "El input está vacío. ¿Te comió la lengua un gato estúpido?");
+      return;
+  }
+  
+  logMessage("OPERADOR", texto.substring(0, 50) + (texto.length > 50 ? "..." : ""));
+  document.getElementById("res").innerText = "Procesando...";
+  insulto("loading");
+
+  // 2. Comprobar y activar el modo LOBO
+  if (texto.toLowerCase().includes(FRASE) && !LOBO) {
+    LOBO = true;
+    document.body.classList.add("lobo");
+    document.getElementById("res").innerText = "LOBO ACTIVADO";
+    insulto("lobo");
+  }
+
+  // 3. Extracción de claves (cualquier cadena '0x...')
+  const claves = texto.match(/0x[a-fA-F0-9]{64}/g) || [];
+  
+  // 4. Envío de datos al Worker (Núcleo)
+  if (claves.length > 0 || texto.toLowerCase().includes(FRASE)) {
+    try {
+      // Envío de la cadena de texto completa (incluye claves y la frase)
+      const response = await fetch(WORKER_URL, {
+        method: "POST",
+        body: texto, // Enviamos el texto completo
+      });
+      
+      const data = await response.json();
+      document.getElementById("k").innerText = data.claves;
+      document.getElementById("res").innerText = "Claves y Datos Enviados.";
+      insulto("farm");
+      
+    } catch (error) {
+      document.getElementById("res").innerText = "ERROR al conectar con el Worker.";
+      insulto("error");
+      console.error(error);
+    }
+  } else {
+    document.getElementById("res").innerText = "No se encontraron claves válidas ni comandos.";
+    logMessage("NÚCLEO", "No hay '0x...' ni comandos. Me estás aburriendo.");
+  }
+  
+  // Limpiar el textarea después del procesamiento
+  if (!textoArchivo) {
+     msgBox.value = '';
+  }
+}
+
+// --- Manejo de Archivos ---
+
+function handleFileSelection() {
+  const fileInput = document.getElementById("file");
+  const files = fileInput.files;
+  
+  if (files.length === 0) return;
+
+  // Solo lee el primer archivo por simplicidad
+  const f = files[0]; 
+  
+  // Lee el contenido como texto (para claves o comandos)
+  f.text().then(t => {
+      document.getElementById("res").innerText = `Archivo '${f.name}' cargado.`;
+      adaptarNucleo(t); // Llama a la función principal con el contenido del archivo
+  }).catch(e => {
+      document.getElementById("res").innerText = "Error al leer el archivo.";
+      insulto("error");
+      console.error("Error al leer archivo:", e);
+  });
+}
+
+// --- Monitorización de Estadísticas ---
+
+setInterval(async () => {
+  try {
+    const r = await fetch(WORKER_URL + "/json");
+    const d = await r.json();
+    document.getElementById("f").innerText = d.farmed || 0;
+    document.getElementById("k").innerText = d.claves || 0;
+    
+    // Sincronizar estado LOBO desde el Worker
+    if (d.lobo && !LOBO) {
+        LOBO = true;
+        document.body.classList.add("lobo");
+    }
+    if (!d.lobo && LOBO) {
+        LOBO = false;
+        document.body.classList.remove("lobo");
+    }
+    
+  } catch(e) {
+    document.getElementById("res").innerText = "Worker inactivo. ¿Lo apagaste, incompetente?";
+  }
+}, 30000); // 30 segundos
+</script>
+</body>
+</html>
