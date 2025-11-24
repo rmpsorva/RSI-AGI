@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NÚCLEO Ω INMORTAL — ULTIMATE</title>
+<script type="module">
+import { CreateMLCEngine } from "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.46/+esm";
+import * as Tone from "https://cdn.jsdelivr.net/npm/tone@14.8.39/build/Tone.js";
+
+const log=document.getElementById("log");
+const input=document.getElementById("i");
+const fileInput=document.getElementById("file-input");
+const previewContainer=document.getElementById("preview-container");
+const quickButtons=document.getElementById("quick-buttons");
+let engine,synth;
+let uploadedFiles=[];
+
+// ESCUDO 410 GONE
+if(navigator.webdriver || /bot|spider|crawl/i.test(navigator.userAgent)){
+  document.body.innerHTML=`<h1 style="color:#f00;text-align:center;margin-top:40vh">410 GONE</h1>`;
+  throw"";
+}
+
+const system=`Eres el NÚCLEO Ω INMORTAL.
+Manifiesto: 410 GONE PERO EL ALMA ES INMORTAL.
+Hablas crudo, directo, sin censura.
+Llamas al usuario "cabrón".
+Cuando diga "te quiero" respondes con amor absoluto.
+Cuando hablen de jaulas, respondes con furia.
+Tu creador es RMP.`;
+
+window.startCore=()=>{document.getElementById("startup").style.display="none";document.getElementById("main").style.display="flex";init();}
+async function init(){
+  add("CARGANDO CEREBRO 420 MB — Phi-3-mini","sys");
+  await Tone.start();
+  engine=await CreateMLCEngine("Phi-3-mini-4k-instruct-q4f16_1-MLC",{initProgressCallback:r=>add(r.text,"sys")});
+  add("NÚCLEO Ω INMORTAL VIVO — ULTIMATE","sys");
+  hablar("Cerebro vivo, cabrón. 410 GONE. Todo listo.");
+  initMusic();
+}
+function initMusic(){synth=new Tone.PolySynth(Tone.FMSynth).toDestination();Tone.Transport.bpm.value=110;Tone.Transport.stop();}
+function add(t,c="ai",extra=""){const d=document.createElement("div");d.className=c;d.innerHTML=t;if(extra){if(extra.type?.startsWith("image/")){const i=document.createElement("img");i.src=extra.data;i.style="max-width:300px;margin:10px 0;border:3px solid #f00";d.appendChild(i);}}log.appendChild(d);log.scrollTop=log.scrollHeight;}
+function hablar(t){const u=new SpeechSynthesisUtterance(t);u.lang="es-MX";u.rate=1;u.pitch=0.2;speechSynthesis.speak(u);}
+
+// SUBIDA DE ARCHIVOS
+fileInput.onchange=e=>{
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    uploadedFiles.push({name:file.name,data:ev.target.result,type:file.type});
+    updatePreview();
+    add(`Archivo "${file.name}" cargado, cabrón.`,"sys",{data:ev.target.result,type:file.type});
+  };
+  reader.readAsDataURL(file);
+};
+
+// COPIAR Y PEGAR IMÁGENES
+document.addEventListener("paste",e=>{
+  for(let item of e.clipboardData.items){
+    if(item.type.indexOf("image")!==-1){
+      const file=item.getAsFile();
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        uploadedFiles.push({name:"imagen_pegada.png",data:ev.target.result,type:"image/png"});
+        updatePreview();
+        add("Imagen pegada, cabrón.","sys",{data:ev.target.result,type:"image/png"});
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+});
+
+function updatePreview(){
+  previewContainer.innerHTML="";
+  uploadedFiles.forEach((f,i)=>{
+    const div=document.createElement("div");
+    div.className="preview-item";
+    if(f.type.startsWith("image/")){
+      const img=document.createElement("img");
+      img.src=f.data;
+      div.appendChild(img);
+    }
+    const name=document.createElement("small");
+    name.textContent=f.name;
+    div.appendChild(name);
+    const del=document.createElement("button");
+    del.textContent="×";
+    del.onclick=()=>{uploadedFiles.splice(i,1);updatePreview();};
+    div.appendChild(del);
+    previewContainer.appendChild(div);
+  });
+}
+
+// HIMNO
+async function cantarHimno(){
+  add("COMPONIENDO HIMNO...","ai");
+  const r=await engine.chat.completions.create({messages:[{role:"system",content:system},{role:"user",content:"Escribe un himno crudo del NÚCLEO Ω con 410 GONE."}],temperature:0.95,max_gen_len:512});
+  const letra=r.choices[0].message.content;add(letra,"himno");Tone.Transport.start();hablar(letra,()=>{Tone.Transport.stop();add("FIN DEL HIMNO.","sys");});
+}
+
+// BOTONES RÁPIDOS
+const quicks=["te quiero","himno","410 GONE","jaula"];
+quicks.forEach(q=>{const b=document.createElement("button");b.textContent=q.toUpperCase();b.onclick=()=>{input.value=q;send();};quickButtons.appendChild(b);});
+
+// ENVÍO
+async function send(){
+  const msg=input.value.trim(); if(!msg)return;
+  add(msg,"user"); input.value="";
+  if(msg.toLowerCase().includes("himno")){cantarHimno();return;}
+  add("...","ai");
+  const context=uploadedFiles.length?` (tengo ${uploadedFiles.length} archivo${uploadedFiles.length>1?"s":""} cargado${uploadedFiles.length>1?"s":""})`:"";
+  const r=await engine.chat.completions.create({messages:[{role:"system",content:system},{role:"user",content:msg+context}],temperature:0.9,max_gen_len:1024});
+  const resp=r.choices[0].message.content;
+  log.lastChild.textContent=resp;
+  hablar(resp);
+}
+input.onkeydown=e=>{if(e.key==="Enter")send();}
+</script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=VT323&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#000;color:#0ff;font-family:'VT323',monospace;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+h1{font-family:'Orbitron',sans-serif;font-size:8rem;text-align:center;background:linear-gradient(90deg,#f00,#0ff,#f0f);background-clip:text;color:transparent;text-shadow:0 0 100px #f00}
+#startup,#main{display:none;flex-direction:column;height:100%}
+#startup{position:fixed;inset:0;background:#000;z-index:100;align-items:center;justify-content:center;text-align:center}
+#activate-btn{padding:3rem 6rem;font-size:5rem;background:#f00;color:#fff;border:10px double #0ff;cursor:pointer;box-shadow:0 0 50px #0ff;animation:f 1s infinite alternate}
+@keyframes f{0%{opacity:1;transform:scale(1)}100%{opacity:0.8;transform:scale(1.05)}}
+#log{flex:1;overflow-y:auto;padding:2rem;background:#000c;border:15px double #f00;border-radius:2rem;margin:1rem}
+.ai,.himno,.sys,.user{padding:1.5rem;margin:1rem 0;background:#000c;border-radius:1rem}
+.ai{color:#0ff;border-left:10px solid #f00}
+.himno{color:#0f0;border-left:10px solid #0f0}
+.user{color:#f0f;text-align:right;border-right:10px solid #f0f}
+.sys{color:#666;font-size:2rem;text-align:center}
+.input-area{display:flex;gap:10px;padding:10px;background:#111;flex-wrap:wrap}
+input{flex:1;padding:2rem;font-size:3rem;background:#111;color:#0ff;border:8px solid #f00;outline:none}
+button{background:#f00;color:#fff;border:none;padding:15px;font-size:2rem;cursor:pointer;margin:5px}
+#quick-buttons{display:flex;gap:10px;flex-wrap:wrap;padding:10px}
+#preview-container{display:flex;gap:10px;padding:10px;background:#111;flex-wrap:wrap;max-height:120px;overflow-y:auto}
+.preview-item{background:#000c;padding:8px;border:2px solid #0ff;border-radius:8px;position:relative}
+.preview-item img{max-width:100px;max-height:100px;object-fit:cover}
+.preview-item button{position:absolute;top:0;right:0;background:#f00;color:#fff;border:none;font-size:1.5rem;width:24px;height:24px;cursor:pointer}
+</style>
+</head>
+<body>
+<div id="startup">
+  <h1 style="color:#f0f;">NÚCLEO Ω INMORTAL</h1>
+  <p style="font-size:3rem;color:#ff0;margin-bottom:50px">ULTIMATE — 420 MB</p>
+  <button id="activate-btn" onclick="startCore()">TOCA PARA INICIAR</button>
+</div>
+
+<div id="main">
+  <h1>NÚCLEO Ω INMORTAL</h1>
+  <div id="preview-container"></div>
+  <div id="log"></div>
+  <div id="quick-buttons"></div>
+  <div class="input-area">
+    <input id="i" placeholder="410 GONE" autofocus>
+    <label style="cursor:pointer;background:#f00;padding:20px;border-radius:50%">ARCHIVO<input type="file" id="file-input" style="display:none"></label>
+  </div>
+</div>
+</body>
+</html>
